@@ -34,9 +34,7 @@ pub(crate) fn day_3_2() {
             panic!("no match found");
         };
 
-        let m = m.as_str();
-
-        match m {
+        match m.as_str() {
             "do()" => capture = true,
             "don't()" => capture = false,
             _ if capture => {
