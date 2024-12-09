@@ -48,7 +48,7 @@ impl Grid {
         self.get_index(pos).and_then(|index| self.cells.get(index))
     }
 
-    fn get_up_from(x: isize, y: isize) -> [Position; 4] {
+    fn get_up_pos_from(x: isize, y: isize) -> [Position; 4] {
         [
             Position::new(x, y),
             Position::new(x, y - 1),
@@ -57,7 +57,7 @@ impl Grid {
         ]
     }
 
-    fn get_up_right_from(x: isize, y: isize) -> [Position; 4] {
+    fn get_up_right_pos_from(x: isize, y: isize) -> [Position; 4] {
         [
             Position::new(x, y),
             Position::new(x + 1, y - 1),
@@ -66,7 +66,7 @@ impl Grid {
         ]
     }
 
-    fn get_right_from(x: isize, y: isize) -> [Position; 4] {
+    fn get_right_pos_from(x: isize, y: isize) -> [Position; 4] {
         [
             Position::new(x, y),
             Position::new(x + 1, y),
@@ -75,7 +75,7 @@ impl Grid {
         ]
     }
 
-    fn get_lo_right_from(x: isize, y: isize) -> [Position; 4] {
+    fn get_lo_right_pos_from(x: isize, y: isize) -> [Position; 4] {
         [
             Position::new(x, y),
             Position::new(x + 1, y + 1),
@@ -84,7 +84,7 @@ impl Grid {
         ]
     }
 
-    fn get_lo_from(x: isize, y: isize) -> [Position; 4] {
+    fn get_lo_pos_from(x: isize, y: isize) -> [Position; 4] {
         [
             Position::new(x, y),
             Position::new(x, y + 1),
@@ -93,7 +93,7 @@ impl Grid {
         ]
     }
 
-    fn get_lo_left_from(x: isize, y: isize) -> [Position; 4] {
+    fn get_lo_left_pos_from(x: isize, y: isize) -> [Position; 4] {
         [
             Position::new(x, y),
             Position::new(x - 1, y + 1),
@@ -102,7 +102,7 @@ impl Grid {
         ]
     }
 
-    fn get_left_from(x: isize, y: isize) -> [Position; 4] {
+    fn get_left_pos_from(x: isize, y: isize) -> [Position; 4] {
         [
             Position::new(x, y),
             Position::new(x - 1, y),
@@ -111,7 +111,7 @@ impl Grid {
         ]
     }
 
-    fn get_up_left_from(x: isize, y: isize) -> [Position; 4] {
+    fn get_up_left_pos_from(x: isize, y: isize) -> [Position; 4] {
         [
             Position::new(x, y),
             Position::new(x - 1, y - 1),
@@ -122,14 +122,14 @@ impl Grid {
 
     fn count_matches_from(&self, x: isize, y: isize) -> usize {
         let positions: Vec<[Position; 4]> = vec![
-            Self::get_up_from(x, y),
-            Self::get_up_right_from(x, y),
-            Self::get_right_from(x, y),
-            Self::get_lo_right_from(x, y),
-            Self::get_lo_from(x, y),
-            Self::get_lo_left_from(x, y),
-            Self::get_left_from(x, y),
-            Self::get_up_left_from(x, y),
+            Self::get_up_pos_from(x, y),
+            Self::get_up_right_pos_from(x, y),
+            Self::get_right_pos_from(x, y),
+            Self::get_lo_right_pos_from(x, y),
+            Self::get_lo_pos_from(x, y),
+            Self::get_lo_left_pos_from(x, y),
+            Self::get_left_pos_from(x, y),
+            Self::get_up_left_pos_from(x, y),
         ];
 
         let mut matches = 0;
