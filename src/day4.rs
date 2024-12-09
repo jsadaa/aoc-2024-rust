@@ -54,7 +54,7 @@ impl Grid {
     // PART 1
 
     fn count_matches_from(&self, x: isize, y: isize) -> usize {
-        let positions: Vec<[Position; 4]> = vec![
+        let directions: Vec<[Position; 4]> = vec![
             [
                 Position::new(x, y),
                 Position::new(x, y - 1),
@@ -107,10 +107,10 @@ impl Grid {
 
         let mut matches = 0;
 
-        'pos: for pos in &positions {
+        'pos: for positions in &directions {
             let mut string = String::new();
 
-            for &pos in pos {
+            for &pos in positions {
                 if let Some(c) = self.get(pos) {
                     string.push(*c);
                 } else {
