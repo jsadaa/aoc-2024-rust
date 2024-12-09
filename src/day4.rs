@@ -1,3 +1,6 @@
+#![allow(clippy::cast_possible_wrap)]
+#![allow(clippy::cast_sign_loss)]
+
 use std::str::Lines;
 
 #[derive(Debug)]
