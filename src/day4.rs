@@ -2,13 +2,13 @@ use std::str::Lines;
 
 #[derive(Debug)]
 struct Grid {
-    width: usize,
-    height: usize,
+    width: isize,
+    height: isize,
     cells: Vec<char>,
 }
 
 impl Grid {
-    fn new(width: usize, height: usize, data: Vec<char>) -> Self {
+    fn new(width: isize, height: isize, data: Vec<char>) -> Self {
         Grid {
             width,
             height,
@@ -16,117 +16,215 @@ impl Grid {
         }
     }
 
-    fn width(&self) -> usize {
+    fn width(&self) -> isize {
         self.width
     }
 
-    fn height(&self) -> usize {
+    fn height(&self) -> isize {
         self.height
     }
 
-    fn get(&self, x: usize, y: usize) -> Option<&char> {
-        if x < self.width && y < self.height {
-            self.cells.get(y * self.width + x)
+    fn get(&self, x: isize, y: isize) -> Option<&char> {
+        let index = y * self.width + x;
+        if index >= 0 && index < self.cells.len() as isize {
+            self.cells.get(index as usize)
         } else {
             None
         }
     }
 
-    fn get_up(&self, x: usize, y: usize) -> Option<String> {
-        if y > 0 {
-            let y = y - 1;
-            let cache = (0..y)
-                .rev()
-                .map(|i| self.get(x, i).expect("no cell at {x},{i}"))
-                .collect::<Vec<&char>>();
+    fn get_up_from(&self, x: isize, y: isize) -> Option<String> {
+        let positions = &[(x, y), (x, y - 1), (x, y - 2), (x, y - 3)];
+        let mut string = String::new();
 
-            let string: String = cache.iter().copied().collect();
-
-            if string.len() == 3 {
-                Some(string)
+        for (x, y) in positions {
+            if let Some(c) = self.get(*x, *y) {
+                string.push(*c);
             } else {
-                None
+                return None;
             }
+        }
+
+        if string == "XMAS" {
+            Some(string)
         } else {
             None
         }
     }
 
-    fn get_up_right(&self, x: usize, y: usize) -> Option<&char> {
-        if y > 0 && x < self.width {
-            self.get(x + 1, y - 1)
+    fn get_up_right_from(&self, x: isize, y: isize) -> Option<String> {
+        let positions = &[(x, y), (x + 1, y - 1), (x + 2, y - 2), (x + 3, y - 3)];
+        let mut string = String::new();
+
+        for (x, y) in positions {
+            if let Some(c) = self.get(*x, *y) {
+                string.push(*c);
+            } else {
+                return None;
+            }
+        }
+
+        if string == "XMAS" {
+            Some(string)
         } else {
             None
         }
     }
 
-    fn get_right(&self, x: usize, y: usize) -> Option<&char> {
-        if x < self.width {
-            self.get(x + 1, y)
+    fn get_right_from(&self, x: isize, y: isize) -> Option<String> {
+        let positions = &[(x, y), (x + 1, y), (x + 2, y), (x + 3, y)];
+        let mut string = String::new();
+
+        for (x, y) in positions {
+            if let Some(c) = self.get(*x, *y) {
+                string.push(*c);
+            } else {
+                return None;
+            }
+        }
+
+        if string == "XMAS" {
+            Some(string)
         } else {
             None
         }
     }
 
-    fn get_lo_right(&self, x: usize, y: usize) -> Option<&char> {
-        if y < self.height && x < self.width {
-            self.get(x + 1, y + 1)
+    fn get_lo_right_from(&self, x: isize, y: isize) -> Option<String> {
+        let positions = &[(x, y), (x + 1, y + 1), (x + 2, y + 2), (x + 3, y + 3)];
+        let mut string = String::new();
+
+        for (x, y) in positions {
+            if let Some(c) = self.get(*x, *y) {
+                string.push(*c);
+            } else {
+                return None;
+            }
+        }
+
+        if string == "XMAS" {
+            Some(string)
         } else {
             None
         }
     }
 
-    fn get_lo(&self, x: usize, y: usize) -> Option<&char> {
-        if y < self.height {
-            self.get(x, y + 1)
+    fn get_lo_from(&self, x: isize, y: isize) -> Option<String> {
+        let positions = &[(x, y), (x, y + 1), (x, y + 2), (x, y + 3)];
+        let mut string = String::new();
+
+        for (x, y) in positions {
+            if let Some(c) = self.get(*x, *y) {
+                string.push(*c);
+            } else {
+                return None;
+            }
+        }
+
+        if string == "XMAS" {
+            Some(string)
         } else {
             None
         }
     }
 
-    fn get_lo_left(&self, x: usize, y: usize) -> Option<&char> {
-        if y < self.height && x > 0 {
-            self.get(x - 1, y + 1)
+    fn get_lo_left_from(&self, x: isize, y: isize) -> Option<String> {
+        let positions = &[(x, y), (x - 1, y + 1), (x - 2, y + 2), (x - 3, y + 3)];
+        let mut string = String::new();
+
+        for (x, y) in positions {
+            if let Some(c) = self.get(*x, *y) {
+                string.push(*c);
+            } else {
+                return None;
+            }
+        }
+
+        if string == "XMAS" {
+            Some(string)
         } else {
             None
         }
     }
 
-    fn get_left(&self, x: usize, y: usize) -> Option<&char> {
-        if x > 0 {
-            self.get(x - 1, y)
+    fn get_left_from(&self, x: isize, y: isize) -> Option<String> {
+        let positions = &[(x, y), (x - 1, y), (x - 2, y), (x - 3, y)];
+        let mut string = String::new();
+
+        for (x, y) in positions {
+            if let Some(c) = self.get(*x, *y) {
+                string.push(*c);
+            } else {
+                return None;
+            }
+        }
+
+        if string == "XMAS" {
+            Some(string)
         } else {
             None
         }
     }
 
-    fn get_up_left(&self, x: usize, y: usize) -> Option<&char> {
-        if y > 0 && x > 0 {
-            self.get(x - 1, y - 1)
+    fn get_up_left_from(&self, x: isize, y: isize) -> Option<String> {
+        let positions = &[(x, y), (x - 1, y - 1), (x - 2, y - 2), (x - 3, y - 3)];
+        let mut string = String::new();
+
+        for (x, y) in positions {
+            if let Some(c) = self.get(*x, *y) {
+                string.push(*c);
+            } else {
+                return None;
+            }
+        }
+
+        if string == "XMAS" {
+            Some(string)
         } else {
             None
         }
+    }
+
+    fn eval_matches_from(&self, x: isize, y: isize) -> usize {
+        let matches: Vec<Option<String>> = vec![
+            self.get_up_from(x, y),
+            self.get_up_right_from(x, y),
+            self.get_right_from(x, y),
+            self.get_lo_right_from(x, y),
+            self.get_lo_from(x, y),
+            self.get_lo_left_from(x, y),
+            self.get_left_from(x, y),
+            self.get_up_left_from(x, y),
+        ];
+
+        matches.iter().filter(|m| m.is_some()).count()
     }
 }
 
 pub(crate) fn day_4_1() {
     let lines = include_str!("../data/day4.txt").lines();
+    let width = lines.clone().take(1).next().unwrap().len();
+    let height = lines.clone().count();
 
-    let height = 10usize;
-    let width = 10usize;
+    println!("w = {width}, h = {height}");
 
     let cells = lines.collect::<Vec<&str>>().join("").chars().collect();
-    let cache: Vec<Vec<(usize, usize)>> = vec![];
-
-    let grid = Grid::new(width, height, cells);
+    let grid = Grid::new(width as isize, height as isize, cells);
+    let mut matches_count: usize = 0;
 
     for y in 0..grid.height() {
         for x in 0..grid.width() {
             let Some(c) = grid.get(x, y) else {
                 panic!("No cell at ({x},{y})")
             };
+
+            if *c == 'X' {
+                matches_count += grid.eval_matches_from(x, y);
+            }
         }
     }
+
+    println!("Matches = {matches_count}");
 }
 
 pub(crate) fn day_4_2() {}
