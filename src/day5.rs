@@ -33,15 +33,8 @@ impl Update {
     }
 
     fn respect(&self, rule: &Rule) -> bool {
-        self.pages
-            .iter()
-            .position(|&p| p == rule.left())
-            .expect("page not found")
-            < self
-                .pages
-                .iter()
-                .position(|&p| p == rule.right())
-                .expect("page not found")
+        self.pages.iter().position(|&p| p == rule.left()).unwrap()
+            < self.pages.iter().position(|&p| p == rule.right()).unwrap()
     }
 
     fn mid(&self) -> Option<&i32> {
