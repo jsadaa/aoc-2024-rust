@@ -76,10 +76,10 @@ pub(crate) fn day_5_1() {
     let total: i32 = updates
         .iter()
         .filter(|update| {
-            let applied_rules: Vec<&Rule> =
-                rules.iter().filter(|rule| rule.apply_to(update)).collect();
-
-            applied_rules.iter().all(|rule| update.respect(rule))
+            rules
+                .iter()
+                .filter(|rule| rule.apply_to(update))
+                .all(|rule| update.respect(rule))
         })
         .map(|update| *update.mid().unwrap())
         .sum();
