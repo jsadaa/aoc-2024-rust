@@ -45,7 +45,7 @@ impl Update {
 pub(crate) fn day_5_1() {
     let rules: Vec<Rule> = include_str!("../data/day5.txt")
         .lines()
-        .take_while(|line| *line != "//")
+        .take_while(|line| !line.is_empty())
         .collect::<Vec<&str>>()
         .into_iter()
         .map(|s: &str| {
@@ -59,7 +59,7 @@ pub(crate) fn day_5_1() {
 
     let updates: Vec<Update> = include_str!("../data/day5.txt")
         .lines()
-        .skip_while(|line| *line != "//")
+        .skip_while(|line| !line.is_empty())
         .skip(1)
         .collect::<Vec<&str>>()
         .into_iter()
