@@ -1,4 +1,83 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
+
+#[derive(Debug)]
+struct DirectedGraph {
+    nodes: HashMap<i32, Node>,
+}
+
+impl DirectedGraph {
+    fn new() -> Self {
+        Self {
+            nodes: HashMap::new(),
+        }
+    }
+
+    fn add_node(&mut self, value: i32) {
+        self.nodes.insert(value, Node::new(value));
+    }
+
+    fn add_edge(&mut self, from: i32, to: i32) {
+        if let Some(from_node) = self.nodes.get_mut(&from) {
+            from_node.add_outgoing(to);
+        }
+        if let Some(to_node) = self.nodes.get_mut(&to) {
+            to_node.add_incoming(from);
+        }
+    }
+
+    fn topological_sort(&mut self) -> Result<Vec<i32>, &'static str> {
+        let mut result = Vec::new();
+        let total_nodes = self.nodes.len();
+
+        let mut no_incoming: VecDeque<i32> = self
+            .nodes
+            .values()
+            .filter(|node| node.incoming_degree() == 0)
+            .map(|node| node.value)
+            .collect();
+
+        while let Some(n) = no_incoming.pop_front() {
+            result.push(n);
+
+            let outgoing: Vec<i32> = self
+                .nodes
+                .get(&n)
+                .map(|node| node.outgoing.iter().copied().collect())
+                .unwrap_or_default();
+
+            for m in outgoing {
+                if let Some(node) = self.nodes.get_mut(&m) {
+                    node.remove_incoming(n);
+                    if node.incoming_degree() == 0 {
+                        no_incoming.push_back(m);
+                    }
+                }
+            }
+        }
+
+        if result.len() == total_nodes {
+            Ok(result)
+        } else {
+            Err("Cycle detected in graph")
+        }
+    }
+}
+
+impl DirectedGraph {
+    fn from_update_and_rules(update: &Update, rules: &[Rule]) -> Self {
+        let mut graph = DirectedGraph::new();
+
+        for &page in &update.pages {
+            graph.add_node(page);
+        }
+
+        for rule in rules.iter().filter(|r| r.apply_to(update)) {
+            graph.add_edge(rule.left(), rule.right());
+        }
+
+        graph
+    }
+}
 
 #[derive(Debug)]
 struct Rule {
@@ -121,8 +200,6 @@ pub(crate) fn day_5_1() {
 }
 
 pub(crate) fn day_5_2() {
-    use std::collections::{HashMap, HashSet, VecDeque};
-
     let rules: Vec<Rule> = include_str!("../data/day5.txt")
         .lines()
         .take_while(|line| !line.is_empty())
@@ -151,52 +228,8 @@ pub(crate) fn day_5_2() {
                 .any(|rule| !update.respect(rule))
         })
         .map(|update| {
-            let mut nodes: HashMap<i32, Node> = update
-                .pages
-                .iter()
-                .map(|&page| (page, Node::new(page)))
-                .collect();
-
-            let applied_rules: Vec<&Rule> =
-                rules.iter().filter(|rule| rule.apply_to(&update)).collect();
-
-            for rule in applied_rules {
-                nodes
-                    .get_mut(&rule.left())
-                    .unwrap()
-                    .add_outgoing(rule.right());
-                nodes
-                    .get_mut(&rule.right())
-                    .unwrap()
-                    .add_incoming(rule.left());
-            }
-
-            let mut reordered_pages: Vec<i32> = Vec::new();
-            let total_nodes = nodes.len();
-
-            let mut no_incoming: VecDeque<i32> = nodes
-                .values()
-                .filter(|node| node.incoming_degree() == 0)
-                .map(|node| node.value)
-                .collect();
-
-            while let Some(n) = no_incoming.pop_front() {
-                reordered_pages.push(n);
-
-                let outgoing: Vec<i32> = nodes.get(&n).unwrap().outgoing.iter().cloned().collect();
-
-                for m in outgoing {
-                    nodes.get_mut(&m).unwrap().remove_incoming(n);
-                    if nodes.get(&m).unwrap().incoming_degree() == 0 {
-                        no_incoming.push_back(m);
-                    }
-                }
-            }
-
-            assert!(
-                reordered_pages.len() == total_nodes,
-                "Cycle detected in graph"
-            );
+            let mut graph = DirectedGraph::from_update_and_rules(&update, &rules);
+            let reordered_pages = graph.topological_sort().expect("Invalid graph structure");
 
             update.set_pages(reordered_pages)
         })
