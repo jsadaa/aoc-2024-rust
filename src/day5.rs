@@ -118,7 +118,7 @@ impl Update {
             < self.pages.iter().position(|&p| p == rule.right()).unwrap()
     }
 
-    fn mid_el(&self) -> Option<&i32> {
+    fn middle_el(&self) -> Option<&i32> {
         self.pages.get(self.pages.len() / 2)
     }
 
@@ -193,7 +193,7 @@ pub(crate) fn day_5_1() {
                 .filter(|rule| rule.apply_to(update))
                 .all(|rule| update.respect(rule))
         })
-        .map(|update| *update.mid_el().unwrap())
+        .map(|update| *update.middle_el().unwrap())
         .sum();
 
     println!("Total : {total:#?}");
@@ -233,7 +233,7 @@ pub(crate) fn day_5_2() {
 
             update.set_pages(reordered_pages)
         })
-        .map(|update| *update.mid_el().unwrap())
+        .map(|update| *update.middle_el().unwrap())
         .sum();
 
     println!("Total = {total:#?}");
