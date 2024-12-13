@@ -6,7 +6,7 @@ enum Direction {
     Left,
 }
 
-enum Error {
+enum Event {
     OutOfBound,
     Obstruction,
 }
@@ -77,35 +77,44 @@ impl Map {
         }
     }
 
-    fn next_position(&self) -> Result<Position, Error> {
+    fn next_position(&self) -> Result<Position, Event> {
         let (x, y) = self.current_pos.to_tup();
 
-        let y: isize = match self.current_direction {
-            Direction::Up => y as isize - 1,
-            Direction::Down => y as isize + 1,
-            _ => y as isize,
+        let next_y = match self.current_direction {
+            Direction::Up => {
+                if y == 0 {
+                    return Err(Event::OutOfBound);
+                }
+                y - 1
+            }
+            Direction::Down => {
+                if y >= self.height - 1 {
+                    return Err(Event::OutOfBound);
+                }
+                y + 1
+            }
+            _ => y,
         };
 
-        let x: isize = match self.current_direction {
-            Direction::Right => x as isize + 1,
-            Direction::Left => x as isize - 1,
-            _ => x as isize,
+        let next_x = match self.current_direction {
+            Direction::Right => {
+                if x >= self.width - 1 {
+                    return Err(Event::OutOfBound);
+                }
+                x + 1
+            }
+            Direction::Left => {
+                if x == 0 {
+                    return Err(Event::OutOfBound);
+                }
+                x - 1
+            }
+            _ => x,
         };
 
-        if y < 0 || y >= self.height as isize || x < 0 || x >= self.width as isize {
-            return Err(Error::OutOfBound);
-        }
-
-        match self
-            .grid
-            .get(y as usize)
-            .unwrap()
-            .get(x as usize)
-            .unwrap()
-            .kind
-        {
-            Kind::Obstruction => Err(Error::Obstruction),
-            _ => Ok(Position::new(x as usize, y as usize)),
+        match self.grid[next_y][next_x].kind {
+            Kind::Obstruction => Err(Event::Obstruction),
+            _ => Ok(Position::new(next_x, next_y)),
         }
     }
 
@@ -119,20 +128,53 @@ impl Map {
 
                 self.current_pos = next_pos;
             }
-            Err(Error::Obstruction) => self.current_direction = self.current_direction.rotate(),
-            Err(Error::OutOfBound) => return Err(()),
+            Err(Event::Obstruction) => self.current_direction = self.current_direction.rotate(),
+            Err(Event::OutOfBound) => return Err(()),
         }
 
         Ok(())
     }
 
-    fn run(mut self) -> usize {
+    fn run(mut self) -> Self {
         while self.next_step().is_ok() {}
 
+        self
+    }
+
+    fn count_visited_cell(&self) -> usize {
         self.grid
             .iter()
             .map(|v| v.iter().filter(|c| c.kind == Kind::Visited).count())
             .sum()
+    }
+}
+
+impl Map {
+    fn from_chars(chars: &[Vec<char>]) -> Self {
+        let mut curr_p = Position::new(0, 0);
+        let mut curr_d = Direction::Up;
+
+        let grid = chars
+            .iter()
+            .enumerate()
+            .map(|(ir, row)| {
+                row.iter()
+                    .enumerate()
+                    .map(|(ic, char)| match char {
+                        '.' => Cell::new(Kind::Empty),
+                        '#' => Cell::new(Kind::Obstruction),
+                        '^' | '>' | 'v' | '<' => {
+                            curr_d = Direction::from(*char);
+                            curr_p = Position::new(ic, ir);
+                            Cell::new(Kind::Visited)
+                        }
+                        _ => panic!("Invalid char in grid : {char}"),
+                    })
+                    .collect()
+            })
+            .collect();
+
+        Map::new(grid, curr_p, curr_d)
     }
 }
 
@@ -148,36 +190,13 @@ impl Cell {
 }
 
 pub(crate) fn day_6_1() {
-    let lines: Vec<Vec<char>> = include_str!("../data/day6.txt")
+    let raw_lines: Vec<Vec<char>> = include_str!("../data/day6.txt")
         .lines()
         .map(|s| s.chars().collect::<Vec<char>>())
         .collect();
 
-    let mut grid: Vec<Vec<Cell>> = vec![];
-    let mut curr_p = Position::new(0, 0);
-    let mut curr_d = Direction::Up;
-
-    for (il, line) in lines.iter().enumerate() {
-        let mut row: Vec<Cell> = vec![];
-        for (ic, char) in line.iter().enumerate() {
-            let cell = match char {
-                '.' => Cell::new(Kind::Empty),
-                '#' => Cell::new(Kind::Obstruction),
-                '^' | '>' | 'v' | '<' => {
-                    curr_d = Direction::from(*char);
-                    curr_p = Position::new(ic, il);
-                    Cell::new(Kind::Visited)
-                }
-                _ => panic!("Invalid char in grid : {char}"),
-            };
-            row.push(cell);
-        }
-        grid.push(row);
-    }
-
-    let map = Map::new(grid, curr_p, curr_d);
-
-    let count = map.run();
+    let map = Map::from_chars(&raw_lines);
+    let count = map.run().count_visited_cell();
 
     println!("Count visited : {count}");
 }
