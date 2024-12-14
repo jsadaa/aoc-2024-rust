@@ -1,21 +1,25 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 
+/// A directed graph implementation using adjacency lists
 #[derive(Debug)]
 struct DirectedGraph {
     nodes: HashMap<i32, Node>,
 }
 
 impl DirectedGraph {
+    /// Creates a new empty directed graph
     fn new() -> Self {
         Self {
             nodes: HashMap::new(),
         }
     }
 
+    /// Adds a new node with the given value to the graph
     fn add_node(&mut self, value: i32) {
         self.nodes.insert(value, Node::new(value));
     }
 
+    /// Adds a directed edge from one node to another
     fn add_edge(&mut self, from: i32, to: i32) {
         if let Some(from_node) = self.nodes.get_mut(&from) {
             from_node.add_outgoing(to);
@@ -25,10 +29,13 @@ impl DirectedGraph {
         }
     }
 
+    /// Performs a topological sort of the graph using Kahn's algorithm
+    /// Returns the sorted nodes or an error if a cycle is detected
     fn topological_sort(&mut self) -> Result<Vec<i32>, &'static str> {
         let mut result = Vec::new();
         let total_nodes = self.nodes.len();
 
+        // Get nodes with no incoming edges to start
         let mut no_incoming: VecDeque<i32> = self
             .nodes
             .values()
@@ -36,15 +43,18 @@ impl DirectedGraph {
             .map(|node| node.value)
             .collect();
 
+        // While there are nodes with no incoming edges
         while let Some(n) = no_incoming.pop_front() {
             result.push(n);
 
+            // Get outgoing edges before modifying the graph
             let outgoing: Vec<i32> = self
                 .nodes
                 .get(&n)
                 .map(|node| node.outgoing.iter().copied().collect())
                 .unwrap_or_default();
 
+            // Remove edges and check for new nodes with no incoming edges
             for m in outgoing {
                 if let Some(node) = self.nodes.get_mut(&m) {
                     node.remove_incoming(n);
@@ -55,6 +65,7 @@ impl DirectedGraph {
             }
         }
 
+        // If we visited all nodes, sort succeeded, otherwise there was a cycle
         if result.len() == total_nodes {
             Ok(result)
         } else {
@@ -64,13 +75,16 @@ impl DirectedGraph {
 }
 
 impl DirectedGraph {
+    /// Creates a new directed graph from an update and set of rules
     fn from_update_and_rules(update: &Update, rules: &[Rule]) -> Self {
         let mut graph = DirectedGraph::new();
 
+        // Add nodes for each page
         for &page in &update.pages {
             graph.add_node(page);
         }
 
+        // Add edges for each applicable rule
         for rule in rules.iter().filter(|r| r.apply_to(update)) {
             graph.add_edge(rule.left(), rule.right());
         }
@@ -79,6 +93,7 @@ impl DirectedGraph {
     }
 }
 
+/// Represents an ordering rule between two pages
 #[derive(Debug)]
 struct Rule {
     left: i32,
@@ -86,48 +101,58 @@ struct Rule {
 }
 
 impl Rule {
+    /// Creates a new rule specifying that left should come before right
     fn new(left: i32, right: i32) -> Self {
         Self { left, right }
     }
 
+    /// Returns the left (source) page of the rule
     fn left(&self) -> i32 {
         self.left
     }
 
+    /// Returns the right (destination) page of the rule
     fn right(&self) -> i32 {
         self.right
     }
 
+    /// Checks if this rule applies to the given update
     fn apply_to(&self, update: &Update) -> bool {
         update.pages.contains(&self.left) && update.pages.contains(&self.right)
     }
 }
 
+/// Represents an update containing an ordered list of pages
 #[derive(Debug)]
 struct Update {
     pages: Vec<i32>,
 }
 
 impl Update {
+    /// Creates a new update with the given pages
     fn new(pages: Vec<i32>) -> Self {
         Self { pages }
     }
 
+    /// Checks if this update respects a given rule's ordering
     fn respect(&self, rule: &Rule) -> bool {
         self.pages.iter().position(|&p| p == rule.left()).unwrap()
             < self.pages.iter().position(|&p| p == rule.right()).unwrap()
     }
 
+    /// Returns the middle element of the pages list
     fn middle_el(&self) -> Option<&i32> {
         self.pages.get(self.pages.len() / 2)
     }
 
+    /// Updates the pages list and returns self
     fn set_pages(mut self, pages: Vec<i32>) -> Self {
         self.pages = pages;
         self
     }
 }
 
+/// Represents a node in the directed graph
 #[derive(Debug, Clone)]
 struct Node {
     value: i32,
@@ -136,6 +161,7 @@ struct Node {
 }
 
 impl Node {
+    /// Creates a new node with the given value
     fn new(value: i32) -> Self {
         Self {
             value,
@@ -144,22 +170,27 @@ impl Node {
         }
     }
 
+    /// Adds an incoming edge from the given node
     fn add_incoming(&mut self, from_value: i32) {
         self.incoming.insert(from_value);
     }
 
+    /// Adds an outgoing edge to the given node
     fn add_outgoing(&mut self, to_value: i32) {
         self.outgoing.insert(to_value);
     }
 
+    /// Removes an incoming edge from the given node
     fn remove_incoming(&mut self, from_value: i32) {
         self.incoming.remove(&from_value);
     }
 
+    /// Removes an outgoing edge to the given node
     fn remove_outgoing(&mut self, to_value: i32) {
         self.outgoing.remove(&to_value);
     }
 
+    /// Returns the number of incoming edges
     fn incoming_degree(&self) -> usize {
         self.incoming.len()
     }

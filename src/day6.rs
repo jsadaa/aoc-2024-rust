@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+/// Represents cardinal directions on the grid
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 enum Direction {
     Up,
@@ -8,6 +9,7 @@ enum Direction {
     Left,
 }
 
+/// Represents the type of cell in the grid
 #[derive(Debug, PartialEq, Eq)]
 enum Kind {
     Obstruction,
@@ -15,18 +17,21 @@ enum Kind {
     Visited,
 }
 
+/// Events that can occur during navigation
 enum Event {
     OutOfBound,
     Obstruction,
     InvalidObstruction,
 }
 
+/// End conditions for the simulation
 #[derive(Debug)]
 enum End {
-    Full,
-    Loop,
+    Full, // Reached edge of grid
+    Loop, // Detected a loop in path
 }
 
+/// 2D grid position
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 struct Position {
     x: usize,
@@ -34,16 +39,19 @@ struct Position {
 }
 
 impl Position {
+    /// Creates a new position at given coordinates
     fn new(x: usize, y: usize) -> Self {
         Self { x, y }
     }
 
+    /// Converts position to tuple format
     fn to_tup(self) -> (usize, usize) {
         (self.x, self.y)
     }
 }
 
 impl Direction {
+    /// Creates direction from char representation
     fn from(char: char) -> Self {
         match char {
             '^' => Direction::Up,
@@ -54,6 +62,7 @@ impl Direction {
         }
     }
 
+    /// Rotates direction 90 degrees clockwise
     fn rotate(self) -> Self {
         match self {
             Direction::Up => Direction::Right,
@@ -64,8 +73,9 @@ impl Direction {
     }
 }
 
+/// Represents the simulation grid and state
 #[derive(Debug)]
-struct Map {
+struct Simulation {
     grid: Vec<Vec<Cell>>,
     current_position: Position,
     current_direction: Direction,
@@ -75,7 +85,8 @@ struct Map {
     visited_states: HashSet<(Position, Direction)>,
 }
 
-impl Map {
+impl Simulation {
+    /// Creates a new simulation with given grid and initial state
     fn new(
         grid: Vec<Vec<Cell>>,
         current_position: Position,
@@ -101,6 +112,7 @@ impl Map {
         }
     }
 
+    /// Calculates next position based on current direction, checking for out of bounds and obstructions
     fn next_position(&self) -> Result<Position, Event> {
         let (x, y) = self.current_position.to_tup();
 
@@ -142,6 +154,7 @@ impl Map {
         }
     }
 
+    /// Processes one step of movement, handling rotations and tracking visited cells
     fn next_step(&mut self) -> Result<(), End> {
         let res = self.next_position();
 
@@ -169,6 +182,7 @@ impl Map {
         Ok(())
     }
 
+    /// Runs simulation until reaching an end condition
     fn run(&mut self) -> Result<(), End> {
         loop {
             match self.next_step() {
@@ -183,6 +197,7 @@ impl Map {
         Ok(())
     }
 
+    /// Counts total number of visited cells in grid
     fn count_visited_cell(&self) -> usize {
         self.grid
             .iter()
@@ -190,6 +205,7 @@ impl Map {
             .sum()
     }
 
+    /// Adds obstruction at given coordinates if valid
     fn add_obstruction(&mut self, y: usize, x: usize) -> Result<(), Event> {
         if self.grid[y][x].kind == Kind::Obstruction
             || (self.current_position.x == x && self.current_position.y == y)
@@ -211,7 +227,8 @@ impl Map {
     }
 }
 
-impl Map {
+impl Simulation {
+    /// Creates simulation from 2D char array, parsing initial position and direction
     fn from_chars(chars: &[Vec<char>], loop_detection: bool) -> Self {
         let mut current_position = Position::new(0, 0);
         let mut current_direction = Direction::Up;
@@ -236,16 +253,18 @@ impl Map {
             })
             .collect();
 
-        Map::new(grid, current_position, current_direction, loop_detection)
+        Simulation::new(grid, current_position, current_direction, loop_detection)
     }
 }
 
+/// Represents a single cell in the grid
 #[derive(Debug)]
 struct Cell {
     kind: Kind,
 }
 
 impl Cell {
+    /// Creates new cell of given kind
     fn new(kind: Kind) -> Self {
         Self { kind }
     }
@@ -257,7 +276,7 @@ pub(crate) fn day_6_1() {
         .map(|s| s.chars().collect::<Vec<char>>())
         .collect();
 
-    let mut map = Map::from_chars(&raw_lines, false);
+    let mut map = Simulation::from_chars(&raw_lines, false);
     let _ = map.run();
 
     let count = map.count_visited_cell();
@@ -278,7 +297,7 @@ pub(crate) fn day_6_2() {
 
     for row_index in 0..height {
         for col_index in 0..width {
-            let mut map = Map::from_chars(&raw_lines, true);
+            let mut map = Simulation::from_chars(&raw_lines, true);
 
             if map.add_obstruction(row_index, col_index).is_ok() {
                 if let Err(End::Loop) = map.run() {
