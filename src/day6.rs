@@ -1,35 +1,9 @@
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 enum Direction {
     Up,
     Right,
     Down,
     Left,
-}
-
-enum Event {
-    OutOfBound,
-    Obstruction,
-}
-
-impl Direction {
-    fn from(char: char) -> Self {
-        match char {
-            '^' => Direction::Up,
-            '>' => Direction::Right,
-            'v' => Direction::Down,
-            '<' => Direction::Left,
-            _ => panic!("Invalid direction : {char}"),
-        }
-    }
-
-    fn rotate(&self) -> Self {
-        match self {
-            Direction::Up => Direction::Right,
-            Direction::Right => Direction::Down,
-            Direction::Down => Direction::Left,
-            Direction::Left => Direction::Up,
-        }
-    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -39,7 +13,20 @@ enum Kind {
     Visited,
 }
 
-#[derive(Clone, Copy, Debug)]
+enum Event {
+    OutOfBound,
+    Obstruction,
+    InvalidObstruction,
+    Loop,
+}
+
+#[derive(Debug)]
+enum End {
+    Full,
+    Loop,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 struct Position {
     x: usize,
     y: usize,
@@ -55,6 +42,27 @@ impl Position {
     }
 }
 
+impl Direction {
+    fn from(char: char) -> Self {
+        match char {
+            '^' => Direction::Up,
+            '>' => Direction::Right,
+            'v' => Direction::Down,
+            '<' => Direction::Left,
+            _ => panic!("Invalid direction : {char}"),
+        }
+    }
+
+    fn rotate(self) -> Self {
+        match self {
+            Direction::Up => Direction::Right,
+            Direction::Right => Direction::Down,
+            Direction::Down => Direction::Left,
+            Direction::Left => Direction::Up,
+        }
+    }
+}
+
 #[derive(Debug)]
 struct Map {
     grid: Vec<Vec<Cell>>,
@@ -62,10 +70,16 @@ struct Map {
     current_direction: Direction,
     width: usize,
     height: usize,
+    loop_detection: bool,
 }
 
 impl Map {
-    fn new(grid: Vec<Vec<Cell>>, current_pos: Position, current_direction: Direction) -> Self {
+    fn new(
+        grid: Vec<Vec<Cell>>,
+        current_pos: Position,
+        current_direction: Direction,
+        loop_detection: bool,
+    ) -> Self {
         let width = grid[0].len();
         let height = grid.len();
         Self {
@@ -74,6 +88,7 @@ impl Map {
             current_direction,
             width,
             height,
+            loop_detection,
         }
     }
 
@@ -114,11 +129,18 @@ impl Map {
 
         match self.grid[next_y][next_x].kind {
             Kind::Obstruction => Err(Event::Obstruction),
-            _ => Ok(Position::new(next_x, next_y)),
+            Kind::Visited => {
+                if self.loop_detection {
+                    Err(Event::Loop)
+                } else {
+                    Ok(Position::new(next_x, next_y))
+                }
+            }
+            Kind::Empty => Ok(Position::new(next_x, next_y)),
         }
     }
 
-    fn next_step(&mut self) -> Result<(), ()> {
+    fn next_step(&mut self) -> Result<(), End> {
         let res = self.next_position();
 
         match res {
@@ -129,16 +151,26 @@ impl Map {
                 self.current_pos = next_pos;
             }
             Err(Event::Obstruction) => self.current_direction = self.current_direction.rotate(),
-            Err(Event::OutOfBound) => return Err(()),
+            Err(Event::OutOfBound) => return Err(End::Full),
+            Err(Event::Loop) => return Err(End::Loop),
+            _ => (),
         }
 
         Ok(())
     }
 
-    fn run(mut self) -> Self {
-        while self.next_step().is_ok() {}
+    fn run(&mut self) -> Result<(), End> {
+        loop {
+            match self.next_step() {
+                Ok(()) => continue,
+                Err(End::Full) => break,
+                Err(End::Loop) => {
+                    return Err(End::Loop);
+                }
+            }
+        }
 
-        self
+        Ok(())
     }
 
     fn count_visited_cell(&self) -> usize {
@@ -147,10 +179,30 @@ impl Map {
             .map(|v| v.iter().filter(|c| c.kind == Kind::Visited).count())
             .sum()
     }
+
+    fn add_obstruction(&mut self, y: usize, x: usize) -> Result<(), Event> {
+        if self.grid[y][x].kind == Kind::Obstruction
+            || (self.current_pos.x == x && self.current_pos.y == y)
+        {
+            return Err(Event::InvalidObstruction);
+        }
+
+        self.grid[y][x].kind = Kind::Obstruction;
+
+        Ok(())
+    }
+
+    fn width(&self) -> usize {
+        self.width
+    }
+
+    fn height(&self) -> usize {
+        self.height
+    }
 }
 
 impl Map {
-    fn from_chars(chars: &[Vec<char>]) -> Self {
+    fn from_chars(chars: &[Vec<char>], loop_detection: bool) -> Self {
         let mut curr_p = Position::new(0, 0);
         let mut curr_d = Direction::Up;
 
@@ -174,7 +226,7 @@ impl Map {
             })
             .collect();
 
-        Map::new(grid, curr_p, curr_d)
+        Map::new(grid, curr_p, curr_d, loop_detection)
     }
 }
 
@@ -195,10 +247,39 @@ pub(crate) fn day_6_1() {
         .map(|s| s.chars().collect::<Vec<char>>())
         .collect();
 
-    let map = Map::from_chars(&raw_lines);
-    let count = map.run().count_visited_cell();
+    let mut map = Map::from_chars(&raw_lines, false);
+    let _ = map.run();
 
-    println!("Count visited : {count}");
+    let count = map.count_visited_cell();
+
+    println!("Visited count : {count}");
 }
 
-pub(crate) fn day_6_2() {}
+pub(crate) fn day_6_2() {
+    let raw_lines: Vec<Vec<char>> = include_str!("../data/day6.txt")
+        .lines()
+        .map(|s| s.chars().collect::<Vec<char>>())
+        .collect();
+
+    let height = raw_lines.len();
+    let width = raw_lines[0].len();
+
+    let mut loop_counter = 0;
+
+    for row_index in 0..height {
+        for col_index in 0..width {
+            // Créer une nouvelle carte pour chaque tentative
+            let mut map = Map::from_chars(&raw_lines, true);
+
+            // Tenter d'ajouter une obstruction
+            if map.add_obstruction(row_index, col_index).is_ok() {
+                // Exécuter la simulation
+                if let Err(End::Loop) = map.run() {
+                    loop_counter += 1;
+                }
+            }
+        }
+    }
+
+    println!("Loop count : {loop_counter}");
+}
