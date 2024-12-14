@@ -2,6 +2,12 @@
 name = "aoc-2024-rust"
 version = "0.1.0"
 edition = "2021"
+description = "AOC 2024 Solutions using rust"
+license = "MIT or APACHE 2.0"
+categories = ["games"]
+keywords = ["aoc", "2024"]
+readme = "README.md"
+repository = "https://github.com/jsadaa/aoc-2024-rust"
 
 [dependencies]
 itertools = "0.13.0"
