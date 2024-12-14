@@ -26,12 +26,12 @@ impl Equation {
     fn gen_combs_two_ops(&self) -> Vec<Vec<Operator>> {
         let n = u32::try_from(self.numbers.len()).unwrap();
         // Calculate total combinations needed: 2^(n-1)
-        let n_combs = 2u32.pow(n - 1);
+        let total_combs = 2u32.pow(n - 1);
         let mut combs: Vec<Vec<Operator>> = vec![];
 
         // Generate each combination by counting from 0 to total_comb-1
         // Each number's binary representation is a unique operator combination
-        for comb in 0..n_combs {
+        for comb in 0..total_combs {
             let mut operators = vec![];
 
             // Extract operator for each position using bit operations
@@ -60,14 +60,20 @@ impl Equation {
     /// - Total combinations = 3^(n-1) since each position has 3 possibilities
     fn gen_combs_three_ops(&self) -> Vec<Vec<Operator>> {
         let n = u32::try_from(self.numbers.len()).unwrap();
-        let n_combs = 3u32.pow(n - 1);
+        // Calculate total combinations needed: 3^(n-1)
+        let total_combs = 3u32.pow(n - 1);
         let mut combs: Vec<Vec<Operator>> = vec![];
 
-        for comb in 0..n_combs {
+        // Generate each combination by counting from 0 to total_comb-1
+        // Each number in base-3 represents a unique operator combination
+        for comb in 0..total_combs {
             let mut operators = vec![];
             let mut temp = comb;
 
+            // Extract operator for each position using modulo-3 operations
             for _ in 0..(n - 1) {
+                // Get remainder when divided by 3 to determine operator
+                // 0 = Add, 1 = Multiply, 2 = Concatenate
                 let op_code = temp % 3;
 
                 match op_code {
@@ -77,6 +83,7 @@ impl Equation {
                     _ => panic!("invalid opcode : {op_code}"),
                 }
 
+                // Integer divide by 3 to get next digit
                 temp /= 3;
             }
 
