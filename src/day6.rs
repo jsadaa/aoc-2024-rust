@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 enum Direction {
     Up,
@@ -17,7 +19,6 @@ enum Event {
     OutOfBound,
     Obstruction,
     InvalidObstruction,
-    Loop,
 }
 
 #[derive(Debug)]
@@ -71,6 +72,7 @@ struct Map {
     width: usize,
     height: usize,
     loop_detection: bool,
+    visited_states: HashSet<(Position, Direction)>,
 }
 
 impl Map {
@@ -82,6 +84,12 @@ impl Map {
     ) -> Self {
         let width = grid[0].len();
         let height = grid.len();
+
+        let mut visited_states = HashSet::new();
+        if loop_detection {
+            visited_states.insert((current_pos, current_direction));
+        }
+
         Self {
             grid,
             current_pos,
@@ -89,6 +97,7 @@ impl Map {
             width,
             height,
             loop_detection,
+            visited_states,
         }
     }
 
@@ -129,14 +138,7 @@ impl Map {
 
         match self.grid[next_y][next_x].kind {
             Kind::Obstruction => Err(Event::Obstruction),
-            Kind::Visited => {
-                if self.loop_detection {
-                    Err(Event::Loop)
-                } else {
-                    Ok(Position::new(next_x, next_y))
-                }
-            }
-            Kind::Empty => Ok(Position::new(next_x, next_y)),
+            _ => Ok(Position::new(next_x, next_y)),
         }
     }
 
@@ -152,8 +154,16 @@ impl Map {
             }
             Err(Event::Obstruction) => self.current_direction = self.current_direction.rotate(),
             Err(Event::OutOfBound) => return Err(End::Full),
-            Err(Event::Loop) => return Err(End::Loop),
             _ => (),
+        }
+
+        if self.loop_detection {
+            let state = (self.current_pos, self.current_direction);
+            if self.visited_states.contains(&state) {
+                return Err(End::Loop);
+            }
+
+            self.visited_states.insert(state);
         }
 
         Ok(())
@@ -268,12 +278,9 @@ pub(crate) fn day_6_2() {
 
     for row_index in 0..height {
         for col_index in 0..width {
-            // Créer une nouvelle carte pour chaque tentative
             let mut map = Map::from_chars(&raw_lines, true);
 
-            // Tenter d'ajouter une obstruction
             if map.add_obstruction(row_index, col_index).is_ok() {
-                // Exécuter la simulation
                 if let Err(End::Loop) = map.run() {
                     loop_counter += 1;
                 }
