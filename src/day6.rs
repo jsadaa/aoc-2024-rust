@@ -67,7 +67,7 @@ impl Direction {
 #[derive(Debug)]
 struct Map {
     grid: Vec<Vec<Cell>>,
-    current_pos: Position,
+    current_position: Position,
     current_direction: Direction,
     width: usize,
     height: usize,
@@ -78,7 +78,7 @@ struct Map {
 impl Map {
     fn new(
         grid: Vec<Vec<Cell>>,
-        current_pos: Position,
+        current_position: Position,
         current_direction: Direction,
         loop_detection: bool,
     ) -> Self {
@@ -87,12 +87,12 @@ impl Map {
 
         let mut visited_states = HashSet::new();
         if loop_detection {
-            visited_states.insert((current_pos, current_direction));
+            visited_states.insert((current_position, current_direction));
         }
 
         Self {
             grid,
-            current_pos,
+            current_position,
             current_direction,
             width,
             height,
@@ -102,7 +102,7 @@ impl Map {
     }
 
     fn next_position(&self) -> Result<Position, Event> {
-        let (x, y) = self.current_pos.to_tup();
+        let (x, y) = self.current_position.to_tup();
 
         let next_y = match self.current_direction {
             Direction::Up => {
@@ -147,10 +147,10 @@ impl Map {
 
         match res {
             Ok(next_pos) => {
-                self.grid[self.current_pos.y][self.current_pos.x].kind = Kind::Visited;
+                self.grid[self.current_position.y][self.current_position.x].kind = Kind::Visited;
                 self.grid[next_pos.y][next_pos.x].kind = Kind::Visited;
 
-                self.current_pos = next_pos;
+                self.current_position = next_pos;
             }
             Err(Event::Obstruction) => self.current_direction = self.current_direction.rotate(),
             Err(Event::OutOfBound) => return Err(End::Full),
@@ -158,7 +158,7 @@ impl Map {
         }
 
         if self.loop_detection {
-            let state = (self.current_pos, self.current_direction);
+            let state = (self.current_position, self.current_direction);
             if self.visited_states.contains(&state) {
                 return Err(End::Loop);
             }
@@ -192,7 +192,7 @@ impl Map {
 
     fn add_obstruction(&mut self, y: usize, x: usize) -> Result<(), Event> {
         if self.grid[y][x].kind == Kind::Obstruction
-            || (self.current_pos.x == x && self.current_pos.y == y)
+            || (self.current_position.x == x && self.current_position.y == y)
         {
             return Err(Event::InvalidObstruction);
         }
@@ -213,8 +213,8 @@ impl Map {
 
 impl Map {
     fn from_chars(chars: &[Vec<char>], loop_detection: bool) -> Self {
-        let mut curr_p = Position::new(0, 0);
-        let mut curr_d = Direction::Up;
+        let mut current_position = Position::new(0, 0);
+        let mut current_direction = Direction::Up;
 
         let grid = chars
             .iter()
@@ -226,8 +226,8 @@ impl Map {
                         '.' => Cell::new(Kind::Empty),
                         '#' => Cell::new(Kind::Obstruction),
                         '^' | '>' | 'v' | '<' => {
-                            curr_d = Direction::from(*char);
-                            curr_p = Position::new(ic, ir);
+                            current_direction = Direction::from(*char);
+                            current_position = Position::new(ic, ir);
                             Cell::new(Kind::Visited)
                         }
                         _ => panic!("Invalid char in grid : {char}"),
@@ -236,7 +236,7 @@ impl Map {
             })
             .collect();
 
-        Map::new(grid, curr_p, curr_d, loop_detection)
+        Map::new(grid, current_position, current_direction, loop_detection)
     }
 }
 
